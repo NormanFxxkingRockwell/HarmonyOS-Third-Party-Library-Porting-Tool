@@ -1,0 +1,13 @@
+# 产物目录（.so 文件较大，可选忽略）
+# libs/*/artifacts/
+
+# 临时文件
+*.tmp
+*.log
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
