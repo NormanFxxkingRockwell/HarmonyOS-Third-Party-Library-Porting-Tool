@@ -60,23 +60,7 @@ patch -p1 < `pwd`/../libzip_oh_pkg.patch
 
 ## 产物
 
-### 设备验证包
-
-`artifacts/output/` 来自 `../ho-thirdparty-porting/outputs/libzip/`，对应已完成设备验证的 arm64 包：
-
-- `artifacts/output/lib/libzip.so.5.5`
-- `artifacts/output/lib/libzip.so.5`
-- `artifacts/output/lib/libzip.so`
-- `artifacts/output/lib/libzstd.so.1`
-- `artifacts/output/lib/libz.so.1`
-- `artifacts/output/lib/liblzma.so.5`
-- `artifacts/output/bin/ziptool`
-- `artifacts/output/bin/zipcmp`
-- `artifacts/output/bin/zipmerge`
-
-### lycium install 产物
-
-`artifacts/arm64-v8a/` 来自 `tpc_c_cplusplus/lycium/usr/libzip/arm64-v8a/`，包含：
+`artifacts/arm64-v8a/` 合并归档了 lycium install 产物和设备验证需要的 arm64 运行时依赖，包含：
 
 - `bin/ziptool`
 - `bin/zipcmp`
@@ -86,6 +70,9 @@ patch -p1 < `pwd`/../libzip_oh_pkg.patch
 - `lib/libzip.so.5.5`
 - `lib/libzip.so.5`
 - `lib/libzip.so`
+- `lib/libzstd.so.1`
+- `lib/libz.so.1`
+- `lib/liblzma.so.5`
 - `lib/pkgconfig/libzip.pc`
 
 当前知识包只保留 `arm64-v8a`。不要在 `meta.yaml` 或产物目录中声明其他架构。

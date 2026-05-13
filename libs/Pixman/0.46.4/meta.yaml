@@ -1,0 +1,49 @@
+name: Pixman
+version: 0.46.4
+
+source:
+  porting_repo: ../ho-thirdparty-porting
+  output_bundle: outputs/Pixman
+
+recipe:
+  method: lycium
+  source_path: tpc_c_cplusplus/thirdparty/pixman
+  build_system: meson
+  package_name: pixman-pixman-0.46.4.tar.gz
+  builddir: pixman-pixman-0.46.4
+  cross_files:
+    - arm64-v8a-cross-file.txt
+
+archs:
+  - arm64-v8a
+
+dependencies:
+  build:
+    - zlib
+    - libpng
+  bundled_runtime:
+    - libpng16.so.16.56.0
+    - libz.so.1.3.2
+
+artifacts:
+  verified_bundle: artifacts/arm64-v8a
+  per_arch_install:
+    arm64-v8a: artifacts/arm64-v8a
+  includes_cli_tools: true
+  includes_runtime_deps: true
+
+validation:
+  build_pass: pass
+  binary_pass: pass
+  device_pass: pass
+  device_channel: hdc fallback
+  device_entry:
+    - pixel-test
+    - thread-test
+    - prng-test
+  device_scenario: run upstream test binaries with libpixman, libpng, and zlib runtime libraries
+
+docs:
+  adaptation_plan: docs/adaptation-plan.md
+  adaptation_report: docs/adaptation-report.md
+  build_report: docs/build-report.md

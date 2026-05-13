@@ -1,0 +1,84 @@
+# Contributor: Jeff Han <hanjinfei@foxmail.com>
+# Maintainer: Jeff Han <hanjinfei@foxmail.com>
+pkgname=pixman
+pkgver=0.46.4
+pkgrel=0
+pkgdesc="Pixman is a low-level software library for pixel manipulation, providing features such as image compositing and trapezoid rasterization."
+url="https://gitlab.freedesktop.org/pixman/pixman"
+archs=("arm64-v8a")
+license=("MIT")
+depends=("zlib" "libpng")
+makedepends=("meson" "ninja")
+
+source="https://gitlab.freedesktop.org/pixman/pixman/-/archive/pixman-$pkgver/$pkgname-$pkgname-$pkgver.tar.gz"
+
+autounpack=true
+downloadpackage=true
+buildtools="meson"
+
+builddir=$pkgname-$pkgname-$pkgver
+packagename=$builddir.tar.gz
+pkgconfigpath=
+
+prepare() {
+    pkgconfigpath=
+    for depend in ${depends[@]}
+    do
+        dependpath=$LYCIUM_ROOT/usr/$depend/$ARCH/lib/pkgconfig
+        if [ ! -d "${dependpath}" ]
+        then
+            continue
+        fi
+        pkgconfigpath=$pkgconfigpath"${dependpath}:"
+    done
+    pkgconfigpath=${pkgconfigpath%:*}
+
+    mkdir -p $builddir/$ARCH-build
+    cp $ARCH-cross-file.txt $builddir
+}
+
+build() {
+    cd $builddir
+    ohos_sdk_path=${OHOS_SDK//\//\\\/}
+    sed -i 's/ohos_sdk/'"$ohos_sdk_path"'/g' $ARCH-cross-file.txt
+
+    meson setup $ARCH-build \
+        --cross-file $ARCH-cross-file.txt \
+        --prefix=$LYCIUM_ROOT/usr/$pkgname/$ARCH \
+        --pkg-config-path="$pkgconfigpath" \
+        -Ddefault_library=shared \
+        -Dtests=enabled \
+        -Ddemos=disabled \
+        -Dgtk=disabled \
+        -Dopenmp=disabled \
+        -Dlibpng=enabled > $ARCH-build/build.log 2>&1
+    $Ninja -v -C $ARCH-build >> $ARCH-build/build.log 2>&1
+    ret=$?
+    cd $OLDPWD
+    return $ret
+}
+
+package() {
+    cd $builddir
+    $Ninja -v -C $ARCH-build install >> $ARCH-build/build.log 2>&1
+    ret=$?
+
+    mkdir -p "${LYCIUM_ROOT}/usr/${pkgname}/${ARCH}/bin"
+    for prog in pixel-test region-test matrix-test scaling-test thread-test prng-test tolerance-test; do
+        if [ -f "$ARCH-build/test/$prog" ]; then
+            cp -f "$ARCH-build/test/$prog" "${LYCIUM_ROOT}/usr/${pkgname}/${ARCH}/bin/"
+        fi
+    done
+
+    pkgconfigpath=
+    cd $OLDPWD
+    return $ret
+}
+
+check() {
+    echo "The test must be on an OpenHarmony device!"
+}
+
+cleanbuild() {
+    rm -rf ${PWD}/$builddir
+}

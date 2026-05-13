@@ -18,7 +18,7 @@ pkgver=1.3.2
 pkgrel=0
 pkgdesc="zlib is designed to be a free, general-purpose, legally unencumbered -- that is, not covered by any patents -- lossless data-compression library for use on virtually any computer hardware and operating system"
 url="https://zlib.net/"
-archs=("armeabi-v7a" "arm64-v8a" "x86_64")
+archs=("arm64-v8a")
 license=()
 depends=()
 makedepends=()
@@ -52,18 +52,11 @@ package() {
 }
 
 check() {
-    if [ $ARCH == "armeabi-v7a" ]
-    then
-        cp ${OHOS_SDK}/native/llvm/lib/arm-linux-ohos/libc++_shared.so $LYCIUM_ROOT/usr/$pkgname/$ARCH/lib/
-    elif [ $ARCH == "arm64-v8a" ]
-    then
+    if [ $ARCH == "arm64-v8a" ]; then
         cp ${OHOS_SDK}/native/llvm/lib/aarch64-linux-ohos/libc++_shared.so $LYCIUM_ROOT/usr/$pkgname/$ARCH/lib/
-    elif [ $ARCH == "x86_64" ]
-    then
-        cp ${OHOS_SDK}/native/llvm/lib/x86_64-linux-ohos/libc++_shared.so $LYCIUM_ROOT/usr/$pkgname/$ARCH/lib/
     else
         echo "${ARCH} not support"
-        return -1.
+        return 1
     fi
     echo "The test must be on an OpenHarmony device!"
 }
@@ -72,6 +65,4 @@ check() {
 cleanbuild(){
      rm -rf ${PWD}/$builddir
 }
-
-
 

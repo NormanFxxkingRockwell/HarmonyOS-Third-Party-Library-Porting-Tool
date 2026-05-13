@@ -76,6 +76,28 @@ parse_assignment() {
     grep -E "^${key}=" "$file" | head -1 | cut -d= -f2- | tr -d '"'
 }
 
+expand_recipe_value() {
+    local value="$1"
+    local pkgname="$2"
+    local pkgver="$3"
+    local builddir="${4:-}"
+    local pkgver_no_prefix="$pkgver"
+
+    if [[ -n "$pkgver" ]]; then
+        pkgver_no_prefix="${pkgver:1}"
+    fi
+
+    value="${value//\$\{pkgname\}/$pkgname}"
+    value="${value//\$pkgname/$pkgname}"
+    value="${value//\$\{pkgver\}/$pkgver}"
+    value="${value//\$pkgver/$pkgver}"
+    value="${value//\$\{pkgver:1\}/$pkgver_no_prefix}"
+    value="${value//\$\{builddir\}/$builddir}"
+    value="${value//\$builddir/$builddir}"
+
+    echo "$value"
+}
+
 parse_recipe_archs() {
     local file="$1"
     grep -E '^archs=\(' "$file" 2>/dev/null \
@@ -223,14 +245,15 @@ if [[ -e "$target_dir" ]]; then
     rm -rf "$target_dir"
 fi
 
-mkdir -p "$target_dir/docs" "$target_dir/artifacts/output" "$target_dir/artifacts/$ARCH" "$target_dir/recipe" "$target_dir/patches"
+mkdir -p "$target_dir/docs" "$target_dir/artifacts/$ARCH" "$target_dir/recipe" "$target_dir/patches"
 
 cp -a "$PORTING_ROOT/reports/$LIB_NAME/." "$target_dir/docs/"
-cp -a "$PORTING_ROOT/outputs/$LIB_NAME/." "$target_dir/artifacts/output/"
+cp -a "$PORTING_ROOT/outputs/$LIB_NAME/." "$target_dir/artifacts/$ARCH/"
 
 if [[ -n "$install_name" && -d "$PORTING_ROOT/tpc_c_cplusplus/lycium/usr/$install_name/$ARCH" ]]; then
     cp -a "$PORTING_ROOT/tpc_c_cplusplus/lycium/usr/$install_name/$ARCH/." "$target_dir/artifacts/$ARCH/"
 fi
+rm -rf "$target_dir/artifacts/$ARCH/share"
 
 recipe_source_path=""
 package_name=""
@@ -247,10 +270,21 @@ if [[ "$method" == "lycium" ]]; then
 
     while IFS= read -r file; do
         cp -a "$file" "$target_dir/recipe/"
-    done < <(find "$recipe_dir" -maxdepth 1 -type f \( -name '*.patch' -o -name '*cross-file*' \) | sort)
+    done < <(find "$recipe_dir" -maxdepth 1 -type f -name '*.patch' | sort)
 
-    package_name="$(parse_assignment "$recipe_dir/HPKBUILD" packagename || true)"
-    builddir="$(parse_assignment "$recipe_dir/HPKBUILD" builddir || true)"
+    while IFS= read -r file; do
+        cp -a "$file" "$target_dir/recipe/"
+    done < <(find "$recipe_dir" -maxdepth 1 -type f \( -name "${ARCH}-cross-file*" -o -name '*cross-file*' \) \
+        ! -name 'armeabi-v7a-cross-file*' \
+        ! -name 'x86-cross-file*' \
+        ! -name 'x86_64-cross-file*' \
+        | sort)
+
+    pkgname="$(parse_assignment "$recipe_dir/HPKBUILD" pkgname || true)"
+    raw_builddir="$(parse_assignment "$recipe_dir/HPKBUILD" builddir || true)"
+    builddir="$(expand_recipe_value "$raw_builddir" "$pkgname" "$version")"
+    raw_package_name="$(parse_assignment "$recipe_dir/HPKBUILD" packagename || true)"
+    package_name="$(expand_recipe_value "$raw_package_name" "$pkgname" "$version" "$builddir")"
 
     while IFS= read -r patch; do
         patches+=("$(basename "$patch")")
@@ -307,7 +341,7 @@ fi
     fi
     echo
     echo "artifacts:"
-    echo "  verified_bundle: artifacts/output"
+    echo "  verified_bundle: artifacts/$ARCH"
     if [[ -d "$target_dir/artifacts/$ARCH" && -n "$(find "$target_dir/artifacts/$ARCH" -mindepth 1 -print -quit)" ]]; then
         echo "  per_arch_install:"
         echo "    $ARCH: artifacts/$ARCH"

@@ -191,8 +191,8 @@ if [[ -d "$pkg_dir/artifacts" ]]; then
             arm64-v8a)
                 pass "artifact arch directory is allowed: $name"
                 ;;
-            armeabi-v7a|x86|x86_64)
-                fail "artifact arch directory is unsupported for this repository: $name"
+            *)
+                fail "artifacts may only contain arm64-v8a at the top level, found: $name"
                 ;;
         esac
     done
