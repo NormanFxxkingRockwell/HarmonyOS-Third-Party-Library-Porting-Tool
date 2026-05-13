@@ -1,0 +1,42 @@
+name: cJSON
+version: v1.7.19
+
+source:
+  upstream: https://github.com/DaveGamble/cJSON
+  archive: https://github.com/DaveGamble/cJSON/archive/refs/tags/v1.7.19.tar.gz
+  porting_repo: ../ho-thirdparty-porting
+  output_bundle: outputs/cJSON
+
+recipe:
+  method: lycium
+  scope: thirdparty
+  source_path: tpc_c_cplusplus/thirdparty/cJSON
+  build_system: cmake
+  package_name: v1.7.19.tar.gz
+  builddir: cJSON-1.7.19
+
+archs:
+  - arm64-v8a
+
+artifacts:
+  verified_bundle: artifacts/arm64-v8a
+  per_arch_install:
+    arm64-v8a: artifacts/arm64-v8a
+  bundled_runtime:
+    dir: lib/runtime-deps/
+    files: []
+    notes: "Only depends on libc.so (system). No third-party runtime deps to bundle."
+  notes:
+    config_files_have_host_paths: "lib/pkgconfig/libcjson.pc and lib/cmake/cJSON/*.cmake contain build-machine absolute paths; see modifications.md for details."
+
+validation:
+  build_pass: pass
+  binary_pass: pass
+  device_pass: pass
+  device_channel: hdc fallback
+  device_entry: cJSON_test, readme_examples
+
+docs:
+  adaptation_plan: docs/adaptation-plan.md
+  adaptation_report: docs/adaptation-report.md
+  build_report: docs/build-report.md
