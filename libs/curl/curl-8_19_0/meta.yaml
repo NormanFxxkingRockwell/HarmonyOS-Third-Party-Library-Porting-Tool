@@ -23,6 +23,11 @@ dependencies:
     - openssl
     - zstd
     - nghttp2
+  runtime:
+    - openssl (libssl.so.3, libcrypto.so.3)
+    - zstd (libzstd.so.1)
+    - nghttp2 (libnghttp2.so.14)
+    - zlib (libz.so)
 
 artifacts:
   verified_bundle: artifacts/arm64-v8a
@@ -40,6 +45,22 @@ artifacts:
     - lib/cmake/CURL/
   pkgconfig:
     - lib/pkgconfig/libcurl.pc
+  bundled_runtime:
+    dir: lib/runtime-deps/
+    files:
+      - libcrypto.so.3
+      - libssl.so.3
+      - libzstd.so
+      - libzstd.so.1
+      - libzstd.so.1.5.7
+      - libnghttp2.so
+      - libnghttp2.so.14
+      - libnghttp2.so.14.29.3
+      - libz.so
+      - libz.so.1
+      - libz.so.1.3.2
+  notes:
+    config_files_have_host_paths: "bin/curl-config, lib/pkgconfig/libcurl.pc, lib/cmake/CURL/CURLConfig.cmake 含本机绝对路径，不可直接跨机器复用"
 
 validation:
   build_pass: pass
@@ -58,3 +79,5 @@ docs:
   adaptation_plan: docs/adaptation-plan.md
   adaptation_report: docs/adaptation-report.md
   build_report: docs/build-report.md
+  dependency_fixes:
+    nghttp2: docs/dependencies/nghttp2-ENABLE_EXAMPLES-fix.md
