@@ -26,6 +26,9 @@
 8. `meta.yaml`、`modifications.md` 或报告中作为复用入口引用的本地文件，必须在知识包内真实存在。
 9. fallback 知识包必须归档实际 fallback 构建脚本；如果验证命令依赖输入文件，也必须归档验证输入。
 10. 从源仓库复制来的脚本如果移动了目录，必须重新检查相对路径语义，不能假设原脚本在新位置仍可执行。
+11. 设备验证时推送过的非系统运行时 `.so`，必须归档到知识包或明确说明由系统/外部环境提供；不要只归档主库 `.so`。
+12. `curl-config`、`.pc`、CMake config 等配置文件如果含构建机绝对路径，必须修成可迁移版本，或在 `meta.yaml` / `modifications.md` 明确标记不可直接跨机器复用。
+13. 如果当前库构建依赖另一个 recipe 的修复，必须把依赖 recipe 修复记录归档到 `docs/dependencies/`，不能只在正文里一句话带过。
 
 ## 推荐工作流
 
@@ -89,6 +92,8 @@ sed -n '1,220p' libs/<库>/<版本>/recipe/HPKBUILD
 ```bash
 find libs/<库>/<版本>/artifacts/arm64-v8a -maxdepth 6 -type f -o -type l | sort
 file libs/<库>/<版本>/artifacts/arm64-v8a/lib/*.so* 2>/dev/null || true
+readelf -d libs/<库>/<版本>/artifacts/arm64-v8a/bin/* 2>/dev/null | rg 'NEEDED|RUNPATH|RPATH' || true
+readelf -d libs/<库>/<版本>/artifacts/arm64-v8a/lib/*.so* 2>/dev/null | rg 'NEEDED|RUNPATH|RPATH' || true
 ```
 
 需要从这些事实中提炼：
@@ -98,6 +103,9 @@ file libs/<库>/<版本>/artifacts/arm64-v8a/lib/*.so* 2>/dev/null || true
 - recipe 原本哪里不匹配，修了哪些字段。
 - 构建系统是什么，关键构建开关是什么。
 - 产物来自 lycium install、outputs，还是 build 目录回收。
+- 二进制和 `.so` 的 `NEEDED` 运行时依赖有哪些，哪些需要随包归档。
+- `curl-config`、`.pc`、CMake config、shell 脚本等文本产物是否含构建机绝对路径。
+- 当前库是否依赖其他 recipe 的修复，例如依赖库 recipe 参数调整。
 - 设备侧验证入口是什么，是否覆盖真实功能路径。
 - 套用到新版本时必须重新检查哪些点。
 
@@ -130,6 +138,13 @@ artifacts:
   verified_bundle: artifacts/arm64-v8a
   per_arch_install:
     arm64-v8a: artifacts/arm64-v8a
+  bundled_runtime:
+    dir: lib/runtime-deps/
+    files:
+      - libssl.so.3
+      - libcrypto.so.3
+  notes:
+    config_files_have_host_paths: "bin/foo-config and lib/pkgconfig/foo.pc contain build-machine absolute paths"
 
 validation:
   build_pass: pass
@@ -140,6 +155,11 @@ validation:
 ```
 
 如果有运行时依赖、CLI、测试 binary、headers、cmake/pkgconfig 文件，应在 `artifacts` 或 `dependencies` 中明确写出。
+
+如果 `readelf -d` 显示依赖了非系统库，例如 `libssl.so.3`、`libcrypto.so.3`、`libzstd.so.1`、`libnghttp2.so.14`，必须二选一：
+
+- 归档到 `artifacts/arm64-v8a/lib/runtime-deps/`，并在 `meta.yaml` 写入 `artifacts.bundled_runtime` 和 `dependencies.runtime`。
+- 明确写入 `modifications.md`：这些库不随包提供，需要使用者从哪个库知识包或设备环境获取。
 
 ### 6. 改写 `modifications.md`
 
@@ -171,6 +191,9 @@ validation:
 - recipe 改动要具体到 `pkgver`、`source`、`packagename`、`builddir`、`SHA512SUM`、关键 build flags。
 - 验证不能只写“通过”，要写真实入口和关键输出。
 - 如果 build-report 里记录了失败分类，要写清楚失败怎么处理，是否进入 fallback。
+- 如果设备验证依赖额外 `.so`，要写清楚运行时依赖闭包、归档位置和部署方式。
+- 如果 install 产物里的 `curl-config`、`.pc`、CMake config 等含构建机绝对路径，要单独写“配置文件绝对路径警告”。
+- 如果修过依赖库 recipe，要写清楚依赖库名、修复点、归档文档路径和新版本复用检查点。
 - 不要照抄大段报告，提炼为后续复用要点。
 
 ### 6.1 fallback 知识包额外要求
@@ -238,6 +261,80 @@ bash -n "$pkg/recipe/build.sh"
 find "$pkg/docs/validation" "$pkg/artifacts/arm64-v8a" -type f 2>/dev/null | sort
 ```
 
+### 6.3 运行时依赖闭包检查
+
+对包含 CLI 或共享库的知识包，必须检查 `readelf` 动态依赖闭包。不要只看设备报告里的命令，也不要只看 `meta.yaml` 中的 build 依赖。
+
+```bash
+pkg=libs/<库>/<版本>
+readelf -d "$pkg"/artifacts/arm64-v8a/bin/* 2>/dev/null | rg 'NEEDED|RUNPATH|RPATH' || true
+readelf -d "$pkg"/artifacts/arm64-v8a/lib/*.so* 2>/dev/null | rg 'NEEDED|RUNPATH|RPATH' || true
+```
+
+处理规则：
+
+- `libc.so`、系统动态加载器等系统库通常不归档，但要确认它们确实属于设备系统环境。
+- 主库自身的 symlink，例如 `libcurl.so.4`，应在本库 `artifacts/arm64-v8a/lib/` 内存在。
+- 第三方依赖库，例如 OpenSSL、zstd、nghttp2、zlib、libpng、lzma，应归档到 `artifacts/arm64-v8a/lib/runtime-deps/`，或明确说明由哪个知识包/外部环境提供。
+- 如果设备验证报告中有 `hdc file send libxxx.so*`，这些 `libxxx` 基本都应进入 `runtime-deps/` 或在文档里说明不归档原因。
+
+归档后复查：
+
+```bash
+needed=$(readelf -d "$pkg"/artifacts/arm64-v8a/bin/* "$pkg"/artifacts/arm64-v8a/lib/*.so* 2>/dev/null \
+  | sed -n 's/.*Shared library: \[\(.*\)\]/\1/p' | sort -u)
+for lib in $needed; do
+  case "$lib" in libc.so|ld-musl-*.so*) continue ;; esac
+  find "$pkg/artifacts/arm64-v8a/lib" "$pkg/artifacts/arm64-v8a/lib/runtime-deps" \
+    -maxdepth 1 \( -type f -o -type l \) -name "$lib" | grep -q . \
+    && echo "OK $lib" || echo "MISSING $lib"
+done
+```
+
+### 6.4 配置文件可迁移性检查
+
+很多 install 产物会带 `*-config`、`.pc`、CMake config。这些文件经常含构建机绝对路径，弱模型很容易漏掉。
+
+必须检查：
+
+```bash
+pkg=libs/<库>/<版本>
+rg -n "/home/|/mnt/|/Users/|ho-thirdparty-porting|tpc_c_cplusplus|command-line-tools|OHOS_SDK|lycium/usr" \
+  "$pkg/artifacts/arm64-v8a" "$pkg/recipe" "$pkg/meta.yaml" "$pkg/modifications.md" || true
+```
+
+处理规则：
+
+- 如果能安全改成相对路径或 `${prefix}`，优先修成可迁移版本。
+- 如果不确定怎么改，保留原始文件，但必须在 `meta.yaml` 的 `artifacts.notes` 和 `modifications.md` 中明确标记“含构建机绝对路径，不可直接跨机器复用”。
+- 不要把含本机路径的配置文件描述成可直接复用。
+
+### 6.5 依赖 recipe 修复归档
+
+如果当前库构建成功依赖另一个库 recipe 的修复，例如 `nghttp2` 需要把 `ENABLE_EXAMPLES=ON` 改成 `OFF`，必须归档依赖修复说明。
+
+推荐位置：
+
+```text
+libs/<库>/<版本>/docs/dependencies/<依赖名>-<修复点>.md
+```
+
+文档至少包含：
+
+- 依赖库名和 recipe 路径。
+- 失败现象。
+- 最小 diff。
+- 影响范围：只影响当前库，还是所有依赖该库的后续库。
+- 套用到依赖库新版本时的检查点。
+
+`meta.yaml` 中也要引用：
+
+```yaml
+docs:
+  dependency_fixes:
+    nghttp2: docs/dependencies/nghttp2-ENABLE_EXAMPLES-fix.md
+```
+
 ### 7. 清理产物边界
 
 确认只存在 `artifacts/arm64-v8a/`：
@@ -303,6 +400,8 @@ rm -rf "$tmp"
 
 上面的 fake 测试不是每个库都能照抄。若库不是 Makefile fallback，应写一个同等粒度的最小测试，目标是验证脚本的输入参数、输出目录和路径语义，而不是重新完成真实交叉编译。
 
+对所有包含 CLI 或共享库的库，额外运行运行时依赖闭包检查和配置路径检查，命令见 6.3 和 6.4。检查结果必须在最终回复中说明。
+
 建议额外运行：
 
 ```bash
@@ -357,6 +456,9 @@ git status --short --branch
 - 判断是否应覆盖已有库目录。
 - 判断从源仓库复制来的 fallback 脚本是否仍能在知识包路径下复用。
 - 判断验证命令引用的输入文件是否已经归档并能复现。
+- 判断 `readelf NEEDED` 里的第三方运行时依赖是否都已归档或说明来源。
+- 判断 install 配置文件里的构建机绝对路径是否会影响跨机器复用。
+- 判断依赖库 recipe 修复是否需要独立归档。
 
 如果弱模型不确定，应停下来汇报具体不确定点，而不是猜。
 
