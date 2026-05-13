@@ -1,0 +1,42 @@
+name: Expat
+version: R_2_7_5
+
+source:
+  upstream: https://github.com/libexpat/libexpat
+  archive: https://github.com/libexpat/libexpat/archive/refs/tags/R_2_7_5.tar.gz
+  porting_repo: ../ho-thirdparty-porting
+  output_bundle: outputs/Expat
+
+recipe:
+  method: lycium
+  scope: thirdparty
+  source_path: tpc_c_cplusplus/thirdparty/libexpat
+  build_system: cmake
+  package_name: R_2_7_5.tar.gz
+  builddir: libexpat-R_2_7_5
+  check_script: HPKCHECK
+
+archs:
+  - arm64-v8a
+
+artifacts:
+  verified_bundle: artifacts/arm64-v8a
+  per_arch_install:
+    arm64-v8a: artifacts/arm64-v8a
+  includes_headers: true
+  includes_cli_tools: true
+  includes_example_binaries: true
+  includes_test_inputs: true
+
+validation:
+  build_pass: pass
+  binary_pass: pass
+  device_pass: pass
+  device_channel: hdc fallback
+  device_entry: elements
+  device_scenario: parse sample XML from stdin and print the element tree
+
+docs:
+  adaptation_plan: docs/adaptation-plan.md
+  adaptation_report: docs/adaptation-report.md
+  build_report: docs/build-report.md
