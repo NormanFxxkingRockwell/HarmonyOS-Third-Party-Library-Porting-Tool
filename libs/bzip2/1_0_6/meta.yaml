@@ -15,6 +15,7 @@ recipe:
   package_name: bzip2-bzip2-1_0_6.zip
   builddir: bzip2-bzip2-1_0_6
   fallback_script: recipe/build.sh
+  fallback_script_usage: "SOURCE_DIR=<bzip2-src> OUTPUT_ROOT=<output> bash recipe/build.sh"
 
 archs:
   - arm64-v8a

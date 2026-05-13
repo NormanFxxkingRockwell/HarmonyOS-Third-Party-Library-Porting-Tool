@@ -50,7 +50,7 @@
 2. `bzip2-shared -dc docs/validation/sample1.bz2` → 成功解压样例数据流
 
 归档文件：
-- fallback 构建脚本：`recipe/build.sh`
+- fallback 构建脚本：`recipe/build.sh`（已改造为可复用脚本，支持 `SOURCE_DIR` / `OUTPUT_ROOT` 参数）
 - 验证输入文件：`docs/validation/sample1.bz2`
 
 关键输出：
