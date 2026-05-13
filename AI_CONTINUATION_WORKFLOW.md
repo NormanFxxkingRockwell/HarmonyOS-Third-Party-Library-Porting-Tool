@@ -23,6 +23,9 @@
 5. 不要把脚本生成的 `modifications.md` 模板直接提交。
 6. 不要声称做了新的设备验证，除非本轮确实重新执行了设备验证；通常这里只归档 `../ho-thirdparty-porting/reports/<库>/build-report.md` 中已有的验证事实。
 7. 每个库完成后独立校验、独立提交、独立推送。
+8. `meta.yaml`、`modifications.md` 或报告中作为复用入口引用的本地文件，必须在知识包内真实存在。
+9. fallback 知识包必须归档实际 fallback 构建脚本；如果验证命令依赖输入文件，也必须归档验证输入。
+10. 从源仓库复制来的脚本如果移动了目录，必须重新检查相对路径语义，不能假设原脚本在新位置仍可执行。
 
 ## 推荐工作流
 
@@ -170,6 +173,71 @@ validation:
 - 如果 build-report 里记录了失败分类，要写清楚失败怎么处理，是否进入 fallback。
 - 不要照抄大段报告，提炼为后续复用要点。
 
+### 6.1 fallback 知识包额外要求
+
+如果 `meta.yaml` 中 `recipe.method` 是 `fallback`，必须额外完成以下检查。
+
+必须归档：
+
+- 实际执行过的 fallback 构建脚本，优先放在 `recipe/build.sh`。
+- 如果脚本只是原始脚本备份而不能在知识包位置直接执行，应命名为 `recipe/original-build.sh`，并在 `modifications.md` 中说明需要放回哪个源码目录执行。
+- 设备验证命令用到的输入文件，例如 `.xml`、`.bz2`、测试数据集片段，优先放在 `docs/validation/`。
+- 如果 fallback 仍参考失败的 lycium recipe，可以保留 `recipe/HPKBUILD` / `recipe/SHA512SUM` 作为失败事实来源，但 `meta.yaml` 必须明确真正复用入口是 fallback 脚本。
+
+`meta.yaml` 至少补充：
+
+```yaml
+recipe:
+  method: fallback
+  build_system: makefile
+  fallback_script: recipe/build.sh
+  fallback_script_usage: "SOURCE_DIR=<src> OUTPUT_ROOT=<out> bash recipe/build.sh"
+
+validation:
+  validation_inputs:
+    - docs/validation/sample1.bz2
+```
+
+`modifications.md` 必须写清：
+
+- 为什么没有继续修 lycium，或者为什么本轮实际进入 fallback。
+- fallback 脚本依赖哪些源码目录、SDK 环境变量和输出目录。
+- fallback 脚本是否已经改造成可复用脚本；如果没有，必须说清楚原始执行位置。
+- 验证输入文件归档在哪里，如何配合设备侧命令复验。
+
+### 6.2 本地引用闭环检查
+
+提交前必须检查所有本地引用是否闭环。重点看这些字段和文本：
+
+- `fallback_script`
+- `build_script`
+- `patches`
+- `cross_files`
+- `validation_inputs`
+- `docs/validation/...`
+- `recipe/*.sh`
+
+可用命令：
+
+```bash
+pkg=libs/<库>/<版本>
+rg -n "fallback_script|build_script|validation_inputs|docs/validation|recipe/.*\\.sh|patches:|cross_files:" "$pkg"
+find "$pkg" -maxdepth 4 -type f | sort
+```
+
+如果 `meta.yaml` 写了 `fallback_script: recipe/build.sh`，必须能通过：
+
+```bash
+test -f "$pkg/recipe/build.sh"
+bash -n "$pkg/recipe/build.sh"
+```
+
+如果验证命令提到 `sample1.bz2`、`sample.xml` 等输入文件，必须能在包内找到对应文件：
+
+```bash
+find "$pkg/docs/validation" "$pkg/artifacts/arm64-v8a" -type f 2>/dev/null | sort
+```
+
 ### 7. 清理产物边界
 
 确认只存在 `artifacts/arm64-v8a/`：
@@ -195,6 +263,45 @@ find libs/<库>/<版本>/artifacts -maxdepth 2 -type d | sort
 scripts/validate-library-package.sh libs/<库>/<版本>
 git diff --check
 ```
+
+如果本库是 fallback，额外运行：
+
+```bash
+pkg=libs/<库>/<版本>
+bash -n "$pkg/recipe/build.sh"
+```
+
+如果 fallback 脚本被声明为可复用脚本，还必须做最小路径语义测试。以 bzip2 这类 Makefile fallback 为例，至少验证：
+
+- 缺少 `OHOS_SDK` 时明确失败。
+- `SOURCE_DIR` 不存在时明确失败。
+- `SOURCE_DIR` 下缺少关键构建文件时明确失败。
+- `SOURCE_DIR` 和 `OUTPUT_ROOT` 使用相对路径或绝对路径时，不会因为脚本内部 `cd` 改变含义。
+
+可使用 fake source 做不依赖真实 SDK 的路径测试：
+
+```bash
+tmp=$(mktemp -d)
+script="$PWD/libs/bzip2/1_0_6/recipe/build.sh"
+mkdir -p "$tmp/src" "$tmp/fake-sdk/native/llvm/bin"
+cat > "$tmp/src/Makefile-libbz2_so" <<'EOF'
+all:
+	@printf lib > libbz2.so.1.0.8
+	@printf lib > libbz2.so.1.0
+	@printf bin > bzip2-shared
+clean:
+	@rm -f libbz2.so.1.0.8 libbz2.so.1.0 bzip2-shared
+EOF
+(
+  cd "$tmp"
+  SOURCE_DIR="$tmp/src" OUTPUT_ROOT=relative-out OHOS_SDK="$tmp/fake-sdk" \
+    bash "$script"
+)
+find "$tmp/relative-out" -type f | sort
+rm -rf "$tmp"
+```
+
+上面的 fake 测试不是每个库都能照抄。若库不是 Makefile fallback，应写一个同等粒度的最小测试，目标是验证脚本的输入参数、输出目录和路径语义，而不是重新完成真实交叉编译。
 
 建议额外运行：
 
@@ -248,6 +355,8 @@ git status --short --branch
 - 判断运行时依赖是否必须随产物归档。
 - 判断脚本生成版本号或 `builddir` 是否正确。
 - 判断是否应覆盖已有库目录。
+- 判断从源仓库复制来的 fallback 脚本是否仍能在知识包路径下复用。
+- 判断验证命令引用的输入文件是否已经归档并能复现。
 
 如果弱模型不确定，应停下来汇报具体不确定点，而不是猜。
 
