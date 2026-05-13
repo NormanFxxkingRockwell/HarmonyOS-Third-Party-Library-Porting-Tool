@@ -47,7 +47,11 @@
 
 验证入口：
 1. `bzip2-shared --help` → 输出版本 `1.0.8, 13-Jul-2019` 和参数说明
-2. `bzip2-shared -dc sample1.bz2` → 成功解压样例数据流
+2. `bzip2-shared -dc docs/validation/sample1.bz2` → 成功解压样例数据流
+
+归档文件：
+- fallback 构建脚本：`recipe/build.sh`
+- 验证输入文件：`docs/validation/sample1.bz2`
 
 关键输出：
 ```

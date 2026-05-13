@@ -14,7 +14,7 @@ recipe:
   build_system: makefile
   package_name: bzip2-bzip2-1_0_6.zip
   builddir: bzip2-bzip2-1_0_6
-  fallback_script: libs/bzip2/build.sh
+  fallback_script: recipe/build.sh
 
 archs:
   - arm64-v8a
@@ -37,6 +37,8 @@ validation:
   device_pass: pass
   device_channel: hdc fallback
   device_entry: bzip2-shared --help 及解压 sample1.bz2
+  validation_inputs:
+    - docs/validation/sample1.bz2
 
 dependencies:
   runtime: []
