@@ -1,0 +1,52 @@
+name: libzip
+version: v1.11.4
+
+source:
+  upstream: https://github.com/nih-at/libzip
+  archive: https://github.com/nih-at/libzip/archive/refs/tags/v1.11.4.tar.gz
+  porting_repo: ../ho-thirdparty-porting
+
+recipe:
+  method: lycium
+  scope: thirdparty
+  source_path: tpc_c_cplusplus/thirdparty/libzip
+  build_system: cmake
+  package_name: v1.11.4.tar.gz
+  builddir: libzip-1.11.4
+  patches:
+    - libzip_oh_pkg.patch
+
+archs:
+  - arm64-v8a
+
+dependencies:
+  build:
+    - openssl
+    - bzip2
+    - zlib
+    - xz
+    - zstd
+  bundled_runtime:
+    - libzstd.so.1
+    - libz.so.1
+    - liblzma.so.5
+
+artifacts:
+  verified_bundle: artifacts/output
+  per_arch_install:
+    arm64-v8a: artifacts/arm64-v8a
+  includes_headers: true
+  includes_cli_tools: true
+
+validation:
+  build_pass: pass
+  binary_pass: pass
+  device_pass: pass
+  device_channel: hdc fallback
+  device_entry: ziptool
+  device_scenario: create zip, add file, read file, compare content
+
+docs:
+  adaptation_plan: docs/adaptation-plan.md
+  adaptation_report: docs/adaptation-report.md
+  build_report: docs/build-report.md
