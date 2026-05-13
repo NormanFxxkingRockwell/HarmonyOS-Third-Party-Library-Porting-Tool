@@ -21,6 +21,16 @@ if [[ -z "$OHOS_SDK" ]]; then
   exit 1
 fi
 
+# Resolve to absolute paths before cd
+if [[ ! -d "$SOURCE_DIR" ]]; then
+  echo "Error: SOURCE_DIR not found: $SOURCE_DIR" >&2
+  exit 1
+fi
+SOURCE_DIR="$(cd "$SOURCE_DIR" && pwd)"
+
+mkdir -p "$OUTPUT_ROOT"
+OUTPUT_ROOT="$(cd "$OUTPUT_ROOT" && pwd)"
+
 if [[ ! -f "$SOURCE_DIR/Makefile-libbz2_so" ]]; then
   echo "Error: Makefile-libbz2_so not found in $SOURCE_DIR" >&2
   exit 1
