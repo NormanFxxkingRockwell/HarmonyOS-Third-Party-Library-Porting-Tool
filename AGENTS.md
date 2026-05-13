@@ -20,6 +20,8 @@ git clone https://gitee.com/openharmony/tpc_c_cplusplus.git
 
 读取本仓库中某个库的配置，套用到同库不同版本。
 
+当前仓库只保留 `arm64-v8a` 产物和配置；不要迁移或声明 `armeabi-v7a`、`x86_64` 等其他架构。
+
 ## 执行流程
 
 ### 1. 查找目标库
@@ -35,7 +37,7 @@ libs/<库名>/<版本>/recipe/HPKBUILD
 ### 2. 读取配置
 
 优先读取：
-- `meta.yaml`：构建方式（lycium/fallback）、架构
+- `meta.yaml`：构建方式（lycium/fallback）、架构（当前应为 `arm64-v8a`）
 - `recipe/HPKBUILD`：lycium recipe
 - `recipe/SHA512SUM`：校验和
 - `modifications.md`：改动指导
@@ -84,6 +86,17 @@ tpc_c_cplusplus/thirdparty/zlib/SHA512SUM
 - lycium 路径不存在：提示用户克隆 tpc_c_cplusplus
 - SDK 未安装：提示用户下载 command-line-tools
 - cmake/clang 缺失：提示用户检查 SDK 目录
+
+## 迁移脚本
+
+从 `ho-thirdparty-porting` 生成知识包时，必须一次处理一个库：
+
+```bash
+LIB_NAME=libzip scripts/migrate-library.sh ../ho-thirdparty-porting .
+scripts/validate-library-package.sh libs/libzip/v1.11.4
+```
+
+脚本会复制真实报告、产物、recipe 和 recipe 同级 patch/cross-file。生成的 `modifications.md` 只是结构化草稿，仍需人工从 `docs/build-report.md` 等报告中提炼真实改动。
 
 ## 输出规范
 

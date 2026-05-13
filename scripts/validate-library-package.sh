@@ -72,9 +72,19 @@ extract_recipe_refs() {
 require_dir "$pkg_dir"
 require_file "$pkg_dir/meta.yaml"
 require_file "$pkg_dir/modifications.md"
-require_file "$pkg_dir/recipe/HPKBUILD"
-require_file "$pkg_dir/recipe/SHA512SUM"
 require_file "$pkg_dir/docs/build-report.md"
+
+method="lycium"
+if [[ -f "$pkg_dir/meta.yaml" ]] && grep -q 'method:[[:space:]]*fallback' "$pkg_dir/meta.yaml"; then
+    method="fallback"
+fi
+
+if [[ "$method" == "lycium" ]]; then
+    require_file "$pkg_dir/recipe/HPKBUILD"
+    require_file "$pkg_dir/recipe/SHA512SUM"
+else
+    pass "fallback package does not require HPKBUILD/SHA512SUM"
+fi
 
 if [[ -f "$pkg_dir/modifications.md" ]]; then
     if grep -q 'recipe 改动：HPKBUILD' "$pkg_dir/modifications.md" \
@@ -85,7 +95,7 @@ if [[ -f "$pkg_dir/modifications.md" ]]; then
     fi
 fi
 
-if [[ -f "$pkg_dir/recipe/HPKBUILD" ]]; then
+if [[ "$method" == "lycium" && -f "$pkg_dir/recipe/HPKBUILD" ]]; then
     mapfile -t refs < <(extract_recipe_refs)
     for ref in "${refs[@]}"; do
         [[ -n "$ref" ]] || continue
@@ -113,13 +123,29 @@ if [[ -f "$pkg_dir/recipe/HPKBUILD" ]]; then
     done
 fi
 
-if [[ -f "$pkg_dir/meta.yaml" && -f "$pkg_dir/recipe/HPKBUILD" ]]; then
+if [[ -f "$pkg_dir/meta.yaml" ]]; then
     mapfile -t meta_archs < <(extract_meta_archs)
-    mapfile -t recipe_archs < <(extract_recipe_archs)
-
     if [[ ${#meta_archs[@]} -eq 0 ]]; then
         fail "meta.yaml has no top-level archs list"
     fi
+
+    for arch in "${meta_archs[@]}"; do
+        if [[ "$arch" != "arm64-v8a" ]]; then
+            fail "meta.yaml declares unsupported arch for this repository: $arch"
+        fi
+    done
+
+    if printf '%s\n' "${meta_archs[@]}" | grep -qx "arm64-v8a"; then
+        pass "meta.yaml includes required arch: arm64-v8a"
+    else
+        fail "meta.yaml missing required arch: arm64-v8a"
+    fi
+fi
+
+if [[ "$method" == "lycium" && -f "$pkg_dir/meta.yaml" && -f "$pkg_dir/recipe/HPKBUILD" ]]; then
+    mapfile -t meta_archs < <(extract_meta_archs)
+    mapfile -t recipe_archs < <(extract_recipe_archs)
+
     if [[ ${#recipe_archs[@]} -eq 0 ]]; then
         warn "recipe/HPKBUILD has no archs=(...) line"
     fi
@@ -143,10 +169,6 @@ if [[ -f "$pkg_dir/meta.yaml" && -f "$pkg_dir/recipe/HPKBUILD" ]]; then
     done
 
     for arch in "${meta_archs[@]}"; do
-        if [[ "$arch" != "arm64-v8a" ]]; then
-            fail "meta.yaml declares unsupported arch for this repository: $arch"
-        fi
-
         if [[ ${#recipe_archs[@]} -gt 0 ]] && ! printf '%s\n' "${recipe_archs[@]}" | grep -qx "$arch"; then
             fail "meta.yaml declares arch not present in recipe: $arch"
         fi

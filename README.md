@@ -19,8 +19,7 @@ libs/
 │       ├── meta.yaml          # 基本信息
 │       ├── artifacts/         # .so 产物
 │       │   ├── arm64-v8a/
-│       │   ├── armeabi-v7a/
-│       │   └── x86_64/
+│       │   └── output/        # 设备验证包（bin/lib/依赖库）
 │       ├── recipe/            # lycium 配置
 │       │   ├── HPKBUILD
 │       │   └── SHA512SUM
@@ -42,6 +41,29 @@ git clone https://gitee.com/openharmony/tpc_c_cplusplus.git
 ## 已迁移库列表
 
 参见 [libs/](./libs/) 目录。
+
+## 迁移脚本
+
+当前仓库只保留 `arm64-v8a` 产物和配置。迁移必须一次处理一个库：
+
+```bash
+LIB_NAME=libzip scripts/migrate-library.sh ../ho-thirdparty-porting .
+```
+
+脚本会迁移：
+
+- `reports/<库>/` 到 `docs/`
+- `outputs/<库>/` 到 `artifacts/output/`
+- `tpc_c_cplusplus/lycium/usr/<pkg>/arm64-v8a/` 到 `artifacts/arm64-v8a/`
+- lycium recipe 及其同级 patch/cross-file 到 `recipe/`
+
+如果库没有 lycium recipe，脚本会按 fallback 知识包处理，并在 `meta.yaml` 中记录 `method: fallback`。
+
+迁移后运行：
+
+```bash
+scripts/validate-library-package.sh libs/<库名>/<版本>
+```
 
 ## AI 使用说明
 
