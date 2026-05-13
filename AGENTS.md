@@ -98,6 +98,8 @@ scripts/validate-library-package.sh libs/libzip/v1.11.4
 
 脚本会复制真实报告、产物、recipe 和 recipe 同级 patch/cross-file。生成的 `modifications.md` 只是结构化草稿，仍需人工从 `docs/build-report.md` 等报告中提炼真实改动。
 
+后续 AI 接手继续整理库知识包时，先阅读 [AI_CONTINUATION_WORKFLOW.md](./AI_CONTINUATION_WORKFLOW.md)，按其中的一库一提交流程执行。
+
 ## 输出规范
 
 完成套用后，输出：

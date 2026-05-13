@@ -65,4 +65,7 @@ scripts/validate-library-package.sh libs/<库名>/<版本>
 
 ## AI 使用说明
 
-参见 [AGENTS.md](./AGENTS.md)。
+参见：
+
+- [AGENTS.md](./AGENTS.md)：本仓库通用 AI 执行说明。
+- [AI_CONTINUATION_WORKFLOW.md](./AI_CONTINUATION_WORKFLOW.md)：后续 AI 继续整理知识包的流水线操作手册。
