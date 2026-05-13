@@ -47,7 +47,7 @@ unset(_cmake_expected_targets)
 
 
 # The installation prefix computed relative to this file's location.
-get_filename_component(_IMPORT_PREFIX "${CMAKE_CURRENT_LIST_DIR}/../../../.." ABSOLUTE)
+get_filename_component(_IMPORT_PREFIX "${CMAKE_CURRENT_LIST_DIR}/../../.." ABSOLUTE)
 
 # Create imported target cjson
 add_library(cjson SHARED IMPORTED)

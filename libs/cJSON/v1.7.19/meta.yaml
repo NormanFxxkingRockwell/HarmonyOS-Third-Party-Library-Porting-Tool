@@ -26,8 +26,7 @@ artifacts:
     dir: lib/runtime-deps/
     files: []
     notes: "Only depends on libc.so (system). No third-party runtime deps to bundle."
-  notes:
-    config_files_have_host_paths: "lib/pkgconfig/libcjson.pc and lib/cmake/cJSON/*.cmake contain build-machine absolute paths; see modifications.md for details."
+  config_portability: "lib/pkgconfig/libcjson.pc and lib/cmake/cJSON/*.cmake have been fixed to use relative paths; verified with pkg-config and cmake find_package smoke tests."
 
 validation:
   build_pass: pass

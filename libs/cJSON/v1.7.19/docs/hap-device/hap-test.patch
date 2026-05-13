@@ -1,6 +1,6 @@
-Binary files /home/aoqiduan/projects/harmonyOS-mcp/harmonyOS-tool/ho-thirdparty-porting/tmp/hap-test/cJSON.baseline.BUwFwZ/soTest/entry/libs/arm64-v8a/libcjson.so and /home/aoqiduan/projects/harmonyOS-mcp/harmonyOS-tool/ho-thirdparty-porting/tmp/hap-test/cJSON/soTest/entry/libs/arm64-v8a/libcjson.so differ
-Binary files /home/aoqiduan/projects/harmonyOS-mcp/harmonyOS-tool/ho-thirdparty-porting/tmp/hap-test/cJSON.baseline.BUwFwZ/soTest/entry/libs/arm64-v8a/libcjson.so.1 and /home/aoqiduan/projects/harmonyOS-mcp/harmonyOS-tool/ho-thirdparty-porting/tmp/hap-test/cJSON/soTest/entry/libs/arm64-v8a/libcjson.so.1 differ
-Binary files /home/aoqiduan/projects/harmonyOS-mcp/harmonyOS-tool/ho-thirdparty-porting/tmp/hap-test/cJSON.baseline.BUwFwZ/soTest/entry/libs/arm64-v8a/libcjson.so.1.7.19 and /home/aoqiduan/projects/harmonyOS-mcp/harmonyOS-tool/ho-thirdparty-porting/tmp/hap-test/cJSON/soTest/entry/libs/arm64-v8a/libcjson.so.1.7.19 differ
+Binary files /home/aoqiduan/projects/harmonyOS-mcp/harmonyOS-tool/ho-thirdparty-porting/tmp/hap-test/cJSON.baseline.BUwFwZ/soTest/entry/libs/arm64-v8a/libcjson.so and /home/aoqiduan/projects/harmonyOS-mcp/harmonyOS-tool/ho-thirdparty-porting/tmp/hap-test/cJSON/soTest/entry/libs/arm64-v8a/libcjson.so diffe
+Binary files /home/aoqiduan/projects/harmonyOS-mcp/harmonyOS-tool/ho-thirdparty-porting/tmp/hap-test/cJSON.baseline.BUwFwZ/soTest/entry/libs/arm64-v8a/libcjson.so.1 and /home/aoqiduan/projects/harmonyOS-mcp/harmonyOS-tool/ho-thirdparty-porting/tmp/hap-test/cJSON/soTest/entry/libs/arm64-v8a/libcjson.so.1 diffe
+Binary files /home/aoqiduan/projects/harmonyOS-mcp/harmonyOS-tool/ho-thirdparty-porting/tmp/hap-test/cJSON.baseline.BUwFwZ/soTest/entry/libs/arm64-v8a/libcjson.so.1.7.19 and /home/aoqiduan/projects/harmonyOS-mcp/harmonyOS-tool/ho-thirdparty-porting/tmp/hap-test/cJSON/soTest/entry/libs/arm64-v8a/libcjson.so.1.7.19 diffe
 diff -ruN '--exclude=.hvigor' '--exclude=.idea' '--exclude=oh_modules' '--exclude=.cxx' '--exclude=build' /home/aoqiduan/projects/harmonyOS-mcp/harmonyOS-tool/ho-thirdparty-porting/tmp/hap-test/cJSON.baseline.BUwFwZ/soTest/entry/oh-package-lock.json5 /home/aoqiduan/projects/harmonyOS-mcp/harmonyOS-tool/ho-thirdparty-porting/tmp/hap-test/cJSON/soTest/entry/oh-package-lock.json5
 --- /home/aoqiduan/projects/harmonyOS-mcp/harmonyOS-tool/ho-thirdparty-porting/tmp/hap-test/cJSON.baseline.BUwFwZ/soTest/entry/oh-package-lock.json5	2026-04-23 09:31:58.000000000 +0800
 +++ /home/aoqiduan/projects/harmonyOS-mcp/harmonyOS-tool/ho-thirdparty-porting/tmp/hap-test/cJSON/soTest/entry/oh-package-lock.json5	2026-04-23 18:03:21.171909993 +0800
@@ -49,7 +49,7 @@ diff -ruN '--exclude=.hvigor' '--exclude=.idea' '--exclude=oh_modules' '--exclud
 @@ -8,8 +8,13 @@
      include(${PACKAGE_FIND_FILE})
  endif()
- 
+
 -include_directories(${NATIVERENDER_ROOT_PATH}
 -                    ${NATIVERENDER_ROOT_PATH}/include)
 -
@@ -169,7 +169,7 @@ diff -ruN '--exclude=.hvigor' '--exclude=.idea' '--exclude=oh_modules' '--exclud
 +    return exports;
 +}
 +EXTERN_C_END
- 
+
  static napi_module demoModule = {
      .nm_version = 1,
 diff -ruN '--exclude=.hvigor' '--exclude=.idea' '--exclude=oh_modules' '--exclude=.cxx' '--exclude=build' /home/aoqiduan/projects/harmonyOS-mcp/harmonyOS-tool/ho-thirdparty-porting/tmp/hap-test/cJSON.baseline.BUwFwZ/soTest/entry/src/main/cpp/types/libentry/Index.d.ts /home/aoqiduan/projects/harmonyOS-mcp/harmonyOS-tool/ho-thirdparty-porting/tmp/hap-test/cJSON/soTest/entry/src/main/cpp/types/libentry/Index.d.ts
