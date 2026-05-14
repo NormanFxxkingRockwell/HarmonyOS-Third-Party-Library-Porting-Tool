@@ -25,7 +25,7 @@ artifacts:
   includes_cli: true
   cli_binary: bin/lz4
   bundled_runtime: none
-  notes: "No pkg-config, CMake config, or *-config files. Headers are from upstream lib/ directory."
+  notes: "No pkg-config, CMake config, or *-config files. liblz4.so and liblz4.so.1 are symlinks to liblz4.so.1.10.0."
 
 validation:
   build_pass: pass
@@ -34,6 +34,9 @@ validation:
   device_channel: hdc fallback
   device_entry: lz4 -V
   device_output: "*** lz4 v1.10.0 64-bit single-thread, by Yann Collet ***"
+  validation_inputs:
+    - docs/validation/sample.txt
+  notes: "Source report only verified lz4 -V startup. Compression/decompression round-trip not verified on device in this package; sample.txt provided for re-verification."
 
 dependencies:
   runtime: []

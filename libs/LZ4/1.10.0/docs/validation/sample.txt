@@ -1,0 +1,4 @@
+LZ4 compression test input.
+This is a small text file used for device-side round-trip verification.
+If lz4 can compress and decompress this file back to its original content,
+the library and CLI are functioning correctly on HarmonyOS.

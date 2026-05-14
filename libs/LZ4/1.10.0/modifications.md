@@ -45,13 +45,19 @@ CLI 程序（`programs/`）包含 POSIX 能力探测和 pthread 支持逻辑（p
 artifacts/arm64-v8a/
 ├── bin/
 │   └── lz4              # CLI 工具，可独立运行
+├── include/
+│   ├── lz4.h
+│   ├── lz4frame.h
+│   ├── lz4hc.h
+│   └── lz4file.h
 └── lib/
     ├── liblz4.so        # symlink → liblz4.so.1
     ├── liblz4.so.1      # symlink → liblz4.so.1.10.0
     └── liblz4.so.1.10.0 # 实际共享库
 ```
 
-- 头文件来自上游 `lib/` 目录：lz4.h、lz4frame.h、lz4hc.h、lz4file.h
+- 头文件归档自上游 `lib/` 目录，包含 lz4.h、lz4frame.h、lz4hc.h、lz4file.h
+- `liblz4.so` 和 `liblz4.so.1` 必须是 symlink。原始 build.sh 使用 `cp -f` 会解引用 symlink，已修复为 `cp -a`
 - lz4 CLI 不依赖 liblz4.so 即可启动（静态链接了压缩逻辑），设备验证路径直接
 
 ## 验证
@@ -69,6 +75,14 @@ hdc shell /data/local/tmp/LZ4/lz4 -V
 *** lz4 v1.10.0 64-bit single-thread, by Yann Collet ***
 ```
 
+**验证覆盖范围说明**：来源报告仅验证了 `lz4 -V` 启动/版本输出，未执行压缩/解压功能验证。`docs/validation/sample.txt` 已归档小文本输入文件，可用于补充 round-trip 验证：
+
+```bash
+hdc file send artifacts/arm64-v8a/bin/lz4 /data/local/tmp/LZ4/
+hdc file send docs/validation/sample.txt /data/local/tmp/LZ4/
+hdc shell "cd /data/local/tmp/LZ4 && ./lz4 sample.txt sample.txt.lz4 && ./lz4 -d sample.txt.lz4 sample.txt.out && diff sample.txt sample.txt.out"
+```
+
 构建过程中有 clang 关于 `--gcc-toolchain` 的未使用参数告警，不影响产物。
 
 ## fallback 脚本复用
@@ -84,7 +98,7 @@ hdc shell /data/local/tmp/LZ4/lz4 -V
 SOURCE_DIR=/path/to/lz4-src OUTPUT_ROOT=/path/to/output bash recipe/build.sh
 ```
 
-脚本内部使用 CMake 交叉编译，产物自动复制到 OUTPUT_ROOT/lib/ 和 OUTPUT_ROOT/bin/。
+脚本内部使用 CMake 交叉编译，产物自动复制到 OUTPUT_ROOT/lib/（含 symlink）、OUTPUT_ROOT/bin/ 和 OUTPUT_ROOT/include/。复制使用 `cp -a` 保留 symlink 关系。
 
 ## 套用到新版本时的检查点
 

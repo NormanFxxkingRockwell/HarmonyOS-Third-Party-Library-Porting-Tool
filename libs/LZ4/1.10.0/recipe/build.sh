@@ -36,8 +36,9 @@ BUILD_DIR="$SOURCE_DIR/build-ohos"
 INSTALL_DIR="$SOURCE_DIR/install-ohos"
 LIB_OUTPUT_DIR="$OUTPUT_ROOT/lib"
 BIN_OUTPUT_DIR="$OUTPUT_ROOT/bin"
+INCLUDE_OUTPUT_DIR="$OUTPUT_ROOT/include"
 
-mkdir -p "$LIB_OUTPUT_DIR" "$BIN_OUTPUT_DIR"
+mkdir -p "$LIB_OUTPUT_DIR" "$BIN_OUTPUT_DIR" "$INCLUDE_OUTPUT_DIR"
 rm -rf "$BUILD_DIR" "$INSTALL_DIR"
 
 "$OHOS_SDK/native/build-tools/cmake/bin/cmake" \
@@ -54,8 +55,9 @@ rm -rf "$BUILD_DIR" "$INSTALL_DIR"
 "$OHOS_SDK/native/build-tools/cmake/bin/cmake" --build "$BUILD_DIR" --parallel "$(nproc)"
 "$OHOS_SDK/native/build-tools/cmake/bin/cmake" --install "$BUILD_DIR"
 
-find "$INSTALL_DIR" -name 'liblz4.so*' -exec cp -f {} "$LIB_OUTPUT_DIR"/ \;
-find "$INSTALL_DIR/bin" -maxdepth 1 -type f -perm -111 -exec cp -f {} "$BIN_OUTPUT_DIR"/ \;
+find "$INSTALL_DIR" -name 'liblz4.so*' -exec cp -a {} "$LIB_OUTPUT_DIR"/ \;
+find "$INSTALL_DIR/bin" -maxdepth 1 -type f -perm -111 -exec cp -a {} "$BIN_OUTPUT_DIR"/ \;
+cp -a "$INSTALL_DIR/include/." "$INCLUDE_OUTPUT_DIR"/
 
 rm -rf "$BUILD_DIR" "$INSTALL_DIR"
 
