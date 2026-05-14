@@ -1,0 +1,47 @@
+name: LZ4
+version: 1.10.0
+
+source:
+  upstream: https://github.com/lz4/lz4
+  archive: https://github.com/lz4/lz4/archive/refs/tags/v1.10.0.tar.gz
+  porting_repo: ../ho-thirdparty-porting
+  output_bundle: outputs/LZ4
+
+recipe:
+  method: fallback
+  build_system: cmake
+  cmake_entry: build/cmake/
+  fallback_script: recipe/build.sh
+  fallback_script_usage: "SOURCE_DIR=<lz4-src> OUTPUT_ROOT=<out> bash recipe/build.sh"
+
+archs:
+  - arm64-v8a
+
+artifacts:
+  verified_bundle: artifacts/arm64-v8a
+  per_arch_install:
+    arm64-v8a: artifacts/arm64-v8a
+  includes_headers: true
+  includes_cli: true
+  cli_binary: bin/lz4
+  bundled_runtime: none
+  notes: "No pkg-config, CMake config, or *-config files. Headers are from upstream lib/ directory."
+
+validation:
+  build_pass: pass
+  binary_pass: pass
+  device_pass: pass
+  device_channel: hdc fallback
+  device_entry: lz4 -V
+  device_output: "*** lz4 v1.10.0 64-bit single-thread, by Yann Collet ***"
+
+dependencies:
+  runtime: []
+  build:
+    - cmake (from OHOS_SDK/native/build-tools/cmake)
+    - clang (from OHOS_SDK toolchain)
+
+docs:
+  adaptation_plan: docs/adaptation-plan.md
+  adaptation_report: docs/adaptation-report.md
+  build_report: docs/build-report.md
