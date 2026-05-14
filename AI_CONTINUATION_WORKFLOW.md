@@ -29,6 +29,8 @@
 11. 设备验证时推送过的非系统运行时 `.so`，必须归档到知识包或明确说明由系统/外部环境提供；不要只归档主库 `.so`。
 12. `curl-config`、`.pc`、CMake config 等配置文件如果含构建机绝对路径，必须修成可迁移版本，或在 `meta.yaml` / `modifications.md` 明确标记不可直接跨机器复用。
 13. 如果当前库构建依赖另一个 recipe 的修复，必须把依赖 recipe 修复记录归档到 `docs/dependencies/`，不能只在正文里一句话带过。
+14. 如果修改了 `.pc`、`*-config`、CMake config 等消费侧配置文件，必须跑真实 smoke test 证明消费者能解析到包内 include/lib；不能只做字符串替换。
+15. 提交信息必须可追溯，禁止只写 `Add`、`Fix`、`Update` 这类泛化标题。
 
 ## 推荐工作流
 
@@ -308,6 +310,45 @@ rg -n "/home/|/mnt/|/Users/|ho-thirdparty-porting|tpc_c_cplusplus|command-line-t
 - 如果能安全改成相对路径或 `${prefix}`，优先修成可迁移版本。
 - 如果不确定怎么改，保留原始文件，但必须在 `meta.yaml` 的 `artifacts.notes` 和 `modifications.md` 中明确标记“含构建机绝对路径，不可直接跨机器复用”。
 - 不要把含本机路径的配置文件描述成可直接复用。
+- 文档必须与实际产物一致：如果配置文件已修复为可迁移版本，`meta.yaml` 和 `modifications.md` 不能继续写“不可直接跨机器复用”；如果没有修复，不能写“已修复”。
+
+如果改过 `.pc` 文件，至少跑 pkg-config smoke test：
+
+```bash
+pkg=libs/<库>/<版本>
+pcdir="$PWD/$pkg/artifacts/arm64-v8a/lib/pkgconfig"
+PKG_CONFIG_PATH="$pcdir" pkg-config --cflags --libs <pkg-config-name>
+PKG_CONFIG_PATH="$pcdir" pkg-config --variable=libdir <pkg-config-name>
+PKG_CONFIG_PATH="$pcdir" pkg-config --variable=includedir <pkg-config-name>
+```
+
+检查输出中的 `libdir`、`includedir` 必须落在当前知识包 `artifacts/arm64-v8a/` 内，且目录真实存在。不要只检查命令退出码；例如缺失 `prefix` 时可能会输出 `/include` 或 `/lib`，这也是错误。
+
+如果改过 CMake config，至少跑 `find_package` smoke test。示例：
+
+```bash
+pkg=libs/<库>/<版本>
+tmp=$(mktemp -d)
+cat > "$tmp/CMakeLists.txt" <<'EOF'
+cmake_minimum_required(VERSION 3.16)
+project(config_smoke C)
+find_package(<CMakePackageName> REQUIRED CONFIG)
+get_target_property(loc <target-name> IMPORTED_LOCATION_RELEASE)
+get_target_property(inc <target-name> INTERFACE_INCLUDE_DIRECTORIES)
+message(STATUS "loc=${loc}")
+message(STATUS "inc=${inc}")
+if(NOT EXISTS "${loc}")
+  message(FATAL_ERROR "imported location missing: ${loc}")
+endif()
+if(NOT EXISTS "${inc}")
+  message(FATAL_ERROR "include dir missing: ${inc}")
+endif()
+EOF
+cmake -S "$tmp" -B "$tmp/build" -DCMAKE_PREFIX_PATH="$PWD/$pkg/artifacts/arm64-v8a"
+rm -rf "$tmp"
+```
+
+上面的 `<CMakePackageName>` 和 `<target-name>` 必须按实际配置文件填写。若 `CMAKE_PREFIX_PATH` 指向 `artifacts/arm64-v8a/lib/cmake/<Package>` 才能找到，也要额外验证这种使用方式。
 
 ### 6.5 依赖 recipe 修复归档
 
@@ -402,6 +443,12 @@ rm -rf "$tmp"
 
 对所有包含 CLI 或共享库的库，额外运行运行时依赖闭包检查和配置路径检查，命令见 6.3 和 6.4。检查结果必须在最终回复中说明。
 
+如果本轮改过 `.pc`、`*-config`、CMake config，必须额外运行 6.4 的消费侧 smoke test，并在最终回复中写明：
+
+- pkg-config 输出的 include/lib 路径是否落在知识包内。
+- CMake `find_package` 是否能解析到包内 `.so` 和 include。
+- `meta.yaml` / `modifications.md` 是否已同步描述“已修复”或“仍不可迁移”。
+
 建议额外运行：
 
 ```bash
@@ -427,6 +474,15 @@ git add libs/<库>/<版本>
 git commit -m "Add <库> arm64 knowledge package"
 git push origin main
 ```
+
+提交信息要求：
+
+- 新增完整知识包：`Add <库> arm64 knowledge package`
+- 修复配置可迁移性：`Fix <库> config portability`
+- 补运行时依赖：`Bundle <库> runtime dependencies`
+- 补 fallback 脚本或验证输入：`Add <库> fallback validation assets`
+
+不要使用 `Add`、`Fix`、`Update`、`change` 这类无法说明范围和原因的提交标题。
 
 推送后确认：
 
